@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from datetime import date, timedelta
-from databasequery import QuerySet_O
+from databasequery import QuerySet_O, QuerySet_N
 import csv
 import pandas as pd
 from dotenv import load_dotenv
@@ -101,7 +101,7 @@ class DailyOutput:
 				'user': os.getenv('user'),
 				'password': os.getenv('passwordN'),
 				'ssl': os.getenv('ssl_pathN'),
-				'database': os.getenv('datebaseN'),
+				'database': os.getenv('databaseN'),
 			}
 			return hostO, hostN
 
@@ -111,14 +111,23 @@ class DailyOutput:
 		csv = Csv(path)
 		hostO, hostN = self._hostList()
 		for database in list(hostO['database'].split(',')):
-			query_instance = QuerySet_O(host=hostO['host'], user=hostO['user'], password=hostO['password'], ssl=hostO['ssl'], database=database)
 			print(database)
+			query_instance = QuerySet_O(host=hostO['host'], user=hostO['user'], password=hostO['password'], ssl=hostO['ssl'], database=database)
 
 			with Session(query_instance.engine) as session:
 				result = session.execute(query_instance.query(self.start_date, self.end_date))
 				csv.write(result.keys(), result.all())
+		
+		# for database in list(hostN['database'].split(',')): if mutiple database
+		if hostN:
+			database = hostN['database']
+			print(database)
+			query_instance = QuerySet_N(host=hostN['host'], user=hostN['user'], password=hostN['password'], ssl=hostN['ssl'], database=database)
+			
+			with Session(query_instance.engine) as session:
+				result = session.execute(query_instance.query(self.start_date, self.end_date))
+				csv.write(result.keys(), result.all())
 		csv.to_excel()
-
 
 
 d = DailyOutput()

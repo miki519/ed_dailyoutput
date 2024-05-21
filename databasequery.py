@@ -43,7 +43,112 @@ class PurchaseOrderProductItem(Base):
 	def __repr__(self) -> str:
 		return f"PurchaseOrderProductItem(id={self.id!r}, pruchase_ordder_prodduct_id={self.purchase_order_product_id!r}, 商品數量={self.quantity!r})"
 
+class N_Orders(Base):
+    __tablename__ ='Orders'
+    
+    id: Mapped[str] = mapped_column(primary_key=True)
+    orderNo: Mapped[str]
+    status: Mapped[int]
+    deliveryStatus: Mapped[int]
+    paymentStatus: Mapped[int]
+    totalPrice: Mapped[int]
+    deliveryType: Mapped[int]
+    paymentMethod: Mapped[int]
+    createdAt: Mapped[date]
 
+class N_OrderDetails(Base):
+    __tablename__ = 'OrderDetails'
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    orderId: Mapped[str]
+    quantity: Mapped[int]
+    price: Mapped[int]
+
+class N_OrderGoods(Base):
+    __tablename__ = 'OrderGoods'
+    
+    id: Mapped[int] = mapped_column(primary_key=True)
+    orderDetailId: Mapped[int]
+    goodsId: Mapped[int]
+
+class N_Goods(Base):
+    __tablename__ = 'Goods'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str]
+    
+class QuerySet_N:
+    def __init__(self,host, user, password, ssl, database):
+        self.ssl_ca = {'ssl_ca': f'{ssl}'}
+        self.engine = create_engine(f'mysql+pymysql://{user}:{password}@{host}/{database}', connect_args= self.ssl_ca)
+    
+    def _website(self):
+        # else_='OTHER'
+        website_mapping = [('BG', 'BuyGoodLife')]
+        
+        website = [(func.left(N_Orders.orderNo, func.length(N_Orders.orderNo) - 14) == prefix, vaule) for prefix, vaule in website_mapping]
+        return case(*website, else_='OTHER').label("網站")
+    
+    def _status(self):
+        status_mapping = [
+            ('2', '已出貨'),
+            ('7', '拒收'),
+            ('8', '取消訂單'),
+            ('5', '訂單失敗'),
+            ('0', '新訂單'),
+            ('413', '已退換貨')
+        ]
+        return case(*[(N_Orders.status == key, value) for key, value in status_mapping], else_='其他狀態-需查詢').label('訂單狀態')
+    
+    def _pay_method(self):
+        # else_='其他付款方式-需查詢'
+        pay_method_mapping = [('1', '貨到付款'),('2', '信用卡付款')]
+        return case(*[(N_Orders.paymentMethod == key, value) for key, value in pay_method_mapping],else_='其他付款方式-需查詢').label('付款方式')
+    
+    def _pay_status(self):
+        # else_='其他付款狀態-需查詢'
+        pay_status_mapping = [('205', '信用卡付款失敗'),('200', '未付款'),('202', '已付款')]
+        return case(*[(N_Orders.paymentStatus == key, value) for key, value in pay_status_mapping], else_='其他付款狀態-需查詢').label('付款狀態')
+
+    def _order_products(self):
+        return func.group_concat(N_Goods.name,'/',
+        N_OrderDetails.quantity,'/',N_OrderDetails.price,).label('訂購商品')
+            
+    def query(self, start_date, end_date):
+        if start_date and end_date:
+            self.start_date = start_date
+            self.end_date = end_date
+        else:
+            self.start_date = datetime.combine(date.today() - timedelta(days=1), datetime.min.time())
+            self.end_date = datetime.combine(date.today() - timedelta(days=1), datetime.max.time())
+
+        result = select(
+            self._website(),
+            self._status(),
+            self._pay_method(),
+            self._pay_status(),
+            self._order_products(),
+            N_Orders.createdAt,        
+        ).join(
+    	    N_OrderDetails, N_OrderDetails.orderId == N_Orders.id
+        ).join(
+            N_OrderGoods, N_OrderGoods.orderDetailId == N_OrderDetails.id
+        ).join(
+            N_Goods, N_Goods.id == N_OrderGoods.goodsId
+        ).group_by(
+            N_Orders.orderNo,
+            N_Orders.totalPrice,
+            N_Orders.paymentMethod,
+            N_Orders.status,
+            N_Orders.paymentStatus,
+            N_Orders.createdAt
+        ).where(
+            between(N_Orders.createdAt,self.start_date,self.end_date)
+        )
+        return result
+    
+    
+    
 class QuerySet_O:
     def __init__(self,host, user, password, ssl, database):
         self.ssl_ca = {'ssl_ca': f'{ssl}'}
