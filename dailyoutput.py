@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from databasequery import QuerySet_O, QuerySet_N
 import csv
 import pandas as pd
@@ -57,7 +57,7 @@ class SendOutput:
 		self.server.sendmail(os.getenv('sender_email'), self.receiver_email, self.message.as_string())
 		self.server.quit()
 
-		print("Email sent successfully!") 
+		print(f"Email sent to {receiver_email} successfully!") 
 
 
 
@@ -106,12 +106,13 @@ class DailyOutput:
 			return hostO, hostN
 
 	def output(self):
+		print(datetime + 'start outputing')
 		filedate = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
 		path = f'./output/{filedate}業績訂單.csv'
 		csv = Csv(path)
 		hostO, hostN = self._hostList()
 		for database in list(hostO['database'].split(',')):
-			print(database)
+			print(datetime+' '+ database)
 			query_instance = QuerySet_O(host=hostO['host'], user=hostO['user'], password=hostO['password'], ssl=hostO['ssl'], database=database)
 
 			with Session(query_instance.engine) as session:
