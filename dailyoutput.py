@@ -106,13 +106,13 @@ class DailyOutput:
 			return hostO, hostN
 
 	def output(self):
-		print(datetime.datetime, '  start outputing')
+		print(datetime.now(), '  start outputing')
 		filedate = (date.today() - timedelta(days=1)).strftime("%Y%m%d")
 		path = f'./output/{filedate}業績訂單.csv'
 		csv = Csv(path)
 		hostO, hostN = self._hostList()
 		for database in list(hostO['database'].split(',')):
-			print(datetime.datetime,'  ', database)
+			print(datetime.now(),'  ', database)
 			query_instance = QuerySet_O(host=hostO['host'], user=hostO['user'], password=hostO['password'], ssl=hostO['ssl'], database=database)
 
 			with Session(query_instance.engine) as session:
@@ -122,7 +122,7 @@ class DailyOutput:
 		# for database in list(hostN['database'].split(',')): if mutiple database
 		if hostN:
 			database = hostN['database']
-			print(datetime.datetime,'  ', database)
+			print(datetime.now(),'  ', database)
 			query_instance = QuerySet_N(host=hostN['host'], user=hostN['user'], password=hostN['password'], ssl=hostN['ssl'], database=database)
 			
 			with Session(query_instance.engine) as session:
