@@ -36,7 +36,7 @@ class SendOutput:
 		att.add_header('Content-Disposition', 'attachment', filename=Header(f'{filedate}業績訂單.xlsx', 'utf-8').encode())
 		self.message.attach(att)
 	
-	def connectSMtp(self):
+	def connectSmtp(self):
 		# 設置 SMTP 服務器的地址和端口，這裡以 Gmail 的 SMTP 為例
 		self.smtp_server = os.getenv("smtp_server")
 		self.smtp_port = 25
@@ -58,7 +58,7 @@ class SendOutput:
 		self.server.quit()
 
 		print("Email sent successfully!") 
-	pass
+
 
 
 class Csv:
@@ -137,5 +137,5 @@ mail = SendOutput()
 
 for reciver in list(os.getenv('receivers').split(",")):
     mail.mailset(reciver)
-    mail.connectSMtp()
+    mail.connectSmtp()
     mail.send_email(reciver)
