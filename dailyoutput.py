@@ -13,6 +13,7 @@ import smtplib
 from email.header import Header
 
 load_dotenv()
+os.chdir(os.getenv('home_dir'))
 
 class SendOutput:
 	
