@@ -127,6 +127,7 @@ class QuerySet_N:
             self._status(),
             self._pay_method(),
             self._pay_status(),
+            N_Orders.totalPrice.label('訂單金額'),
             self._order_products(),
             N_Orders.createdAt,        
         ).join(
@@ -192,8 +193,9 @@ class QuerySet_O:
         result = select(
             self._website(),
             self._status(),
-            self._pay_method(),
+            self._pay_method(),       
             self._pay_status(),
+            PurchaseOrder.fee.label('訂單金額'),
             self._order_products(),
             PurchaseOrder.created,        
         ).join(
